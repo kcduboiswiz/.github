@@ -47,6 +47,9 @@ jobs:
     name: Wiz CLI docker image scan
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+        
       - name: Build docker image
         uses: docker/build-push-action@v6.18.0
         with:

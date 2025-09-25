@@ -9,8 +9,8 @@ on:
       registry_url:
         description: Container registry URL
         type: string
-        required: true
-        default: hub.docker.com
+        required: false
+        default: docker.io
 
       image_tag:
         description: Tag of the image
@@ -23,6 +23,12 @@ on:
         type: string
         required: false
         default: ./Dockerfile
+
+      wiz_image_sign:
+        description: Tag the image for image signing
+        type: boolean
+        required: false
+        default: false
 
       wiz_env:
         description: Wiz tenant environment to use
@@ -41,6 +47,13 @@ jobs:
     name: Wiz CLI docker image scan
     runs-on: ubuntu-latest
     steps:
+      - name: Build docker image
+        uses: ocker/build-push-action@v6.18.0
+        with:
+          tags: |
+            ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+          push: false
+
       - name: Setup wizcli and authenticate to Wiz
         run: |
           if [[ ! -z "${{ inputs.wiz_env }}" && "${{ inputs.wiz_env }}" != "app" ]]; then export WIZ_ENV=${{ inputs.wiz_env }}; fi
@@ -52,6 +65,7 @@ jobs:
         run: ./wizcli docker scan --image ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag}} --dockerfile "${{ inputs.dockerfile }}"
 
       - name: Wiz CLI image signing tag
+        if: ${{ inputs.wiz_image_sign }}
         run: |
           docker pull ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
           ./wizcli docker tag --image ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag }}

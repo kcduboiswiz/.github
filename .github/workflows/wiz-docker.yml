@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build docker image
-        uses: ocker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v6.18.0
         with:
           tags: |
             ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag }}

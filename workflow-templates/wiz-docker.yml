@@ -1,0 +1,57 @@
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: Name of the image (only the repository without the registry URL)
+        type: string
+        required: true
+
+      registry_url:
+        description: Container registry URL
+        type: string
+        required: true
+        default: hub.docker.com
+
+      image_tag:
+        description: Tag of the image
+        type: string
+        required: false
+        default: latest
+
+      dockerfile:
+        description: Path to the dockerfile
+        type: string
+        required: false
+        default: ./Dockerfile
+
+      wiz_env:
+        description: Wiz tenant environment to use
+        type: string
+        required: false
+        default: app
+
+    secrets:
+      wiz_client_id:
+        required: true
+      wiz_client_secret:
+        required: true
+
+jobs:
+  wiz-docker-scan:
+    name: Wiz CLI docker image scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup wizcli and authenticate to Wiz
+        run: |
+          if [[ ! -z "${{ inputs.wiz_env }}" && "${{ inputs.wiz_env }}" != "app" ]]; then export WIZ_ENV=${{ inputs.wiz_env }}; fi
+          curl -Lo wizcli https://wizcli.app.wiz.io/latest/wizcli-linux-amd64
+          chmod +x wizcli
+          ./wizcli auth --id "${{ secrets.WIZ_CLIENT_ID }}" --secret "${{ secrets.WIZ_CLIENT_SECRET }}"
+
+      - name: Wiz CLI - Container image scan
+        run: ./wizcli docker scan --image ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag}} --dockerfile "${{ inputs.dockerfile }}"
+
+      - name: Wiz CLI image signing tag
+        run: |
+          docker pull ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
+          ./wizcli docker tag --image ${{ inputs.registry_url }}/${{ inputs.image_name }}:${{ inputs.image_tag }}
